@@ -1,24 +1,24 @@
 module D_FF (q, d, reset, clk);
- output reg q;
- input d, reset, clk;
- always_ff @(posedge clk)
- if (reset)
- q <= 0; // On reset, set to 0
- else
- q <= d; // Otherwise out = d
+  output reg q;
+  input d, reset, clk;
+  always_ff @(posedge clk)
+  if (reset)
+  q <= 0; // On reset, set to 0
+  else
+  q <= d; // Otherwise out = d
 endmodule
 
 
 
 module mux2_1 (out, i0, i1, sel);
-  output logic out;
-  input logic i0, i1, sel;
-  logic n_sel, a0, a1;
+  output wire out;
+  input wire i0, i1, sel;
+  wire n_sel, a0, a1;
 
-  not g1 (n_sel, sel);
-  and g2 (a0, i0, n_sel);
-  and g3 (a1, i1, sel);
-  or g4 (out, a0, a1);
+  not #(0.05) g1 (n_sel, sel);
+  and #(0.05) g2 (a0, i0, n_sel);
+  and #(0.05) g3 (a1, i1, sel);
+  or  #(0.05) g4 (out, a0, a1);
 endmodule
 
 
