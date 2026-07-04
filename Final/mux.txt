@@ -3,10 +3,10 @@ module mux2_1 (out, i0, i1, sel);
   input wire i0, i1, sel;
   wire n_sel, a0, a1;
 
-  not #(0.05) g1 (n_sel, sel);
-  and #(0.05) g2 (a0, i0, n_sel);
-  and #(0.05) g3 (a1, i1, sel);
-  or  #(0.05) g4 (out, a0, a1);
+  not #50 g1 (n_sel, sel);
+  and #50 g2 (a0, i0, n_sel);
+  and #50 g3 (a1, i1, sel);
+  or  #50 g4 (out, a0, a1);
 endmodule
 
 
