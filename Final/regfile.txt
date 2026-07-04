@@ -21,7 +21,7 @@ module regfile (
       reg64bit reg_inst (
           .q(regs[r]),
           .d(WriteData),
-          .en(write_en[r])
+          .en(write_en[r]),
           .clk(clk),
 	  .reset(reset)
       );
