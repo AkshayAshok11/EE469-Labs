@@ -19,9 +19,9 @@ module regfile (
   generate
     for (r = 0; r < 31; r = r + 1) begin : reg_bank
       reg64bit reg_inst (
-          .q  (regs[r]),
-          .d  (WriteData),
-          .we (enable[r]),
+          .q(regs[r]),
+          .d(WriteData),
+          .en(write_en[r])
           .clk(clk),
 	  .reset(reset)
       );
