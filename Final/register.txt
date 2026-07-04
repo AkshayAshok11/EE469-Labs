@@ -11,7 +11,7 @@ endmodule
 
 
 
-module 64bit (q, d, en, reset, clk);
+module reg64bit (q, d, en, reset, clk);
   output logic [63:0] q;
   input logic [63:0] d;
   input logic en, reset, clk;
