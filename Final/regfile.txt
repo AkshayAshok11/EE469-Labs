@@ -6,13 +6,13 @@ module regfile (
     input clk, reset
 );
 
-  wire [31:0] enable;
+  wire [31:0] write_en;
   wire [63:0] regs [0:31];
 
-  decoder5to32 dec (
-      .enable(enable),
-      .sel(WriteRegister),
-      .write_en(RegWrite)
+  dec5_32 decoder (
+    .out(write_en), 
+    .sel(WriteRegister), 
+    .en(RegWrite)
   );
 
   genvar r;
