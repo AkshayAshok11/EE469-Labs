@@ -28,5 +28,5 @@ module negativeflag (negative, in);
   output wire negative;
   input wire [63:0] in;
   
-  and #(0.05) g1 (negative, in[0], 1'b1);
+  and #(0.05) g1 (negative, in[63], 1'b1);
 endmodule
