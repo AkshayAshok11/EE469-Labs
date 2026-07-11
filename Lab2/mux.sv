@@ -20,10 +20,10 @@ module mux8_1 (
 
   genvar i;
   generate
-    for (i = 0; i < 4; i = i + 1) begin : L2
+    for (i = 0; i < 4; i = i + 1) begin : L1
       mux2_1 m (.out(lvl1[i]), .i0(in[2*i]), .i1(in[2*i+1]), .sel(sel[0]));
     end
-    for (i = 0; i < 2; i = i + 1) begin : L3
+    for (i = 0; i < 2; i = i + 1) begin : L2
       mux2_1 m (.out(lvl2[i]), .i0(lvl1[2*i]), .i1(lvl1[2*i+1]), .sel(sel[1]));
     end
   endgenerate

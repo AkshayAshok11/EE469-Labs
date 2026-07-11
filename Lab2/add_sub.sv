@@ -12,45 +12,84 @@ module add (in1, in2, sum, cin, cout);
 
 endmodule
 
-/*
-module add8bit (in1, in2, sum, cout);
-  output wire [7:0] sum;
-  output wire cout;
-  input wire [7:0] in1, in2;
-  wire [7:0] carry;
-  genvar i;
-  generate
-    for(i = 0; i < 8; i = i + 1) begin: adder
-      if (i == 0) begin
-        add a(in1[i], in2[i], sum[i], 1'b0, carry[i]);
-      end
-      else begin
-        wire c;
-        add a(in1[i], in2[i], sum[i], carry[i-1], carry[i]);
-      end
-    end
-  endgenerate
-  assign cout = carry[7];
-endmodule
-*/
-module add64 (in1, in2, cin, sum, cout, cin_msb);
+
+module addchain (in1, in2, sum, cin, cout);
   input  wire [63:0] in1, in2;
   input  wire cin;
   output wire [63:0] sum;
   output wire cout;
-  output wire cin_msb;
 
-  wire [63:0] carry;
+  wire [62:0] carry;
   genvar i;
   generate
-    for (i = 0; i < 64; i = i + 1) begin : bit
+    for (i = 0; i < 64; i = i + 1) begin : add
       if (i == 0)
-        add a(in1[i], in2[i], sum[i], cin, carry[i]);
+        add a(.in1(in1[i]), .in2(in2[i]), .sum(sum[i]), .cin(cin), .cout(carry[i]));
+      else if (i == 63)
+        add a(.in1(in1[i]), .in2(in2[i]), .sum(sum[i]), .cin(carry[i-1]), .cout(cout));
       else
-        add a(in1[i], in2[i], sum[i], carry[i-1], carry[i]);
+        add a(.in1(in1[i]), .in2(in2[i]), .sum(sum[i]), .cin(carry[i-1]), .cout(carry[i]));
     end
   endgenerate
+endmodule
 
-  assign cout = carry[63];
-  assign cin_msb = carry[62];
+
+
+module add64 (in1, in2, sum, overflow, carry_out);
+  input  wire [63:0] in1, in2;
+  output wire [63:0] sum;
+  output wire overflow, carry_out;
+
+  addchain add (
+    .in1(in1),
+    .in2(in2),
+    .sum(sum),
+    .cin(1'b0),
+    .cout(carry_out)
+  );
+
+  wire same_sign, diff_sum;
+  xnor #(0.05) g_same (same_sign, in1[63], in2[63]);
+  xor  #(0.05) g_diff (diff_sum,  in1[63], sum[63]);
+  and  #(0.05) g_ovf  (overflow,  same_sign, diff_sum);
+endmodule
+
+
+
+
+module not64 (out, in);
+  output wire [63:0] out;
+  input wire [63:0] in;
+  genvar i;
+  generate
+    for (i = 0; i < 64; i = i + 1) begin : nots
+      not #(0.05) g1(out[i], in[i]);
+    end
+  endgenerate
+endmodule
+
+
+module sub64 (in1, in2, diff, overflow, carry_out);
+  input  wire [63:0] in1, in2;
+  output wire [63:0] diff;
+  output wire overflow, carry_out;
+
+  wire [63:0] not_in2;
+  not64 inv (
+    .out(not_in2),
+    .in(in2)
+  );
+
+  addchain add (
+    .in1(in1),
+    .in2(not_in2),
+    .sum(diff),
+    .cin(1'b1),
+    .cout(carry_out)
+  );
+
+  wire same_sign, diff_sum;
+  xnor #(0.05) g_same (same_sign, in1[63], not_in2[63]);
+  xor  #(0.05) g_diff (diff_sum,  in1[63], diff[63]);
+  and  #(0.05) g_ovf  (overflow,  same_sign, diff_sum);
 endmodule
