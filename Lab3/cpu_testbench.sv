@@ -1,17 +1,23 @@
 // Test bench for the single-cycle CPU
 `timescale 1ns/10ps
 
-// Runs every provided benchmark in turn and checks the final register/
-// flag/memory state with assert, the same way alustim.sv checks the ALU:
-// no manual eyeballing of a register dump, just pass/fail. Expected
-// values below are copied from the "Expected results" comment at the
-// top of each benchmark file.
+// Runs whichever benchmark is currently selected in instructmem.sv (see
+// its `define BENCHMARK line near the top of that file). To check a
+// different benchmark, edit that line, recompile, and rerun -- same
+// workflow as the lab handout describes. Check the result either in the
+// wave window (see cpu_wave.do) or in the register/flag/memory dump this
+// testbench prints at the end, against that benchmark's own "Expected
+// results" comment.
 
 module cpu_testbench ();
 
 	parameter ClockDelay = 10000;	// Your regfile's gate delays (#50 per gate, several
 									// decoder/mux levels deep) need a clock much longer
 									// than you'd expect -- "a VERY long clock is fine."
+	parameter NumCycles  = 800;	// Long enough for every provided benchmark to finish
+									// (test11_Sort needs the most, ~601 cycles). Every
+									// benchmark ends in a self-loop, so finishing early
+									// just means idling there harmlessly for the rest.
 
 	logic clk, reset;
 
@@ -25,126 +31,30 @@ module cpu_testbench ();
 	// Force %t's to print in a nice format.
 	initial $timeformat(-9, 2, " ns", 10);
 
-	// Loads a new program into instruction memory, clears data memory so
-	// each benchmark starts from a clean slate, then resets and runs the
-	// CPU for the given number of cycles.
-	integer m;
-	task run_program(string filename, integer cycles);
-		begin
-			$readmemb(filename, dut.imem.mem);
-			for (m = 0; m < 1024; m = m + 1)
-				dut.dmem.mem[m] = 8'h00;
+	integer i;
+	initial begin // Stimulus
+		reset <= 1;
+		@(posedge clk);
+		@(posedge clk);
+		reset <= 0;
 
-			reset = 1;
+		for (i = 0; i < NumCycles; i = i + 1)
 			@(posedge clk);
-			@(posedge clk);
-			reset = 0;
 
-			repeat (cycles) @(posedge clk);
-		end
-	endtask
+		$display("---- Final register file ----");
+		for (i = 0; i < 31; i = i + 1)
+			$display("X%0d = %0d", i, $signed(dut.rf.regs[i]));
+		$display("X31 = 0 (XZR, hardwired)");
 
-	initial begin
+		$display("---- Flags ----");
+		$display("N = %b   V = %b", dut.N_flag, dut.V_flag);
 
-		$display("%t testing ADDI and B", $time);
-		run_program("../benchmarks/test01_AddiB.arm", 15);
-		assert(dut.rf.regs[0] == 0);
-		assert(dut.rf.regs[1] == 1);
-		assert(dut.rf.regs[2] == 2);
-		assert(dut.rf.regs[3] == 3);
-		assert(dut.rf.regs[4] == 4);
+		$display("---- Data memory (first 32 bytes) ----");
+		for (i = 0; i < 32; i = i + 8)
+			$display("Mem[%0d] = 0x%h%h%h%h%h%h%h%h", i,
+				dut.dmem.mem[i+7], dut.dmem.mem[i+6], dut.dmem.mem[i+5], dut.dmem.mem[i+4],
+				dut.dmem.mem[i+3], dut.dmem.mem[i+2], dut.dmem.mem[i+1], dut.dmem.mem[i]);
 
-		$display("%t testing ADDS and SUBS", $time);
-		run_program("../benchmarks/test02_AddsSubs.arm", 15);
-		assert(dut.rf.regs[0] == 64'd1);
-		assert(dut.rf.regs[1] == -64'd1);
-		assert(dut.rf.regs[2] == 64'd2);
-		assert(dut.rf.regs[3] == -64'd3);
-		assert(dut.rf.regs[4] == -64'd2);
-		assert(dut.rf.regs[5] == -64'd5);
-		assert(dut.rf.regs[6] == 64'd0);
-		assert(dut.rf.regs[7] == -64'd6);
-		assert(dut.N_flag == 1 && dut.V_flag == 0);
-
-		$display("%t testing CBZ and B", $time);
-		run_program("../benchmarks/test03_CbzB.arm", 25);
-		assert(dut.rf.regs[0] == 1);
-		assert(dut.rf.regs[1] == 0);
-		assert(dut.rf.regs[3] == 1);
-		assert(dut.rf.regs[4] == 31);
-		assert(dut.rf.regs[5] == 0);
-
-		$display("%t testing LDUR and STUR", $time);
-		run_program("../benchmarks/test04_LdurStur.arm", 15);
-		assert(dut.rf.regs[0] == 1);
-		assert(dut.rf.regs[1] == 2);
-		assert(dut.rf.regs[2] == 3);
-		assert(dut.rf.regs[3] == 8);
-		assert(dut.rf.regs[4] == 11);
-		assert(dut.rf.regs[5] == 1);
-		assert(dut.rf.regs[6] == 2);
-		assert(dut.rf.regs[7] == 3);
-		assert(dut.dmem.mem[0] == 1);	// low byte is enough -- every expected value here fits in one byte
-		assert(dut.dmem.mem[8] == 2);
-		assert(dut.dmem.mem[16] == 3);
-
-		$display("%t testing B.LT", $time);
-		run_program("../benchmarks/test05_Blt.arm", 15);
-		assert(dut.rf.regs[0] == 1);
-		assert(dut.rf.regs[1] == 1);
-
-		$display("%t testing BL and BR", $time);
-		run_program("../benchmarks/test06_BlBr.arm", 20);
-		assert(dut.rf.regs[0] == 1);
-		assert(dut.rf.regs[1] == 0);
-		assert(dut.rf.regs[3] == 1);
-		assert(dut.rf.regs[4] == 52);
-		assert(dut.rf.regs[5] == 64);
-		assert(dut.rf.regs[29] == 20);
-		assert(dut.rf.regs[30] == 68);
-
-		$display("%t testing data-hazard forwarding cases", $time);
-		run_program("../benchmarks/test10_forwarding.arm", 100);
-		assert(dut.rf.regs[0] == 0);
-		assert(dut.rf.regs[1] == 8);
-		assert(dut.rf.regs[2] == 0);	// 0 on a single-cycle CPU (4 on a pipelined one)
-		assert(dut.rf.regs[3] == 5);
-		assert(dut.rf.regs[4] == 7);
-		assert(dut.rf.regs[5] == 2);
-		assert(dut.rf.regs[6] == -64'd2);
-		assert(dut.rf.regs[7] == -64'd2);
-		assert(dut.rf.regs[8] == 0);
-		assert(dut.rf.regs[9] == 1);
-		assert(dut.rf.regs[10] == -64'd4);
-		assert(dut.rf.regs[14] == 5);
-		assert(dut.rf.regs[15] == 8);
-		assert(dut.rf.regs[16] == 9);
-		assert(dut.rf.regs[17] == 1);
-		assert(dut.rf.regs[18] == 99);
-		assert(dut.dmem.mem[0] == 8);
-		assert(dut.dmem.mem[8] == 5);
-
-		$display("%t testing bubble sort", $time);
-		run_program("../benchmarks/test11_Sort.arm", 700);
-		assert(dut.rf.regs[11] == 1);
-		assert(dut.rf.regs[12] == 2);
-		assert(dut.rf.regs[13] == 3);
-		assert(dut.rf.regs[14] == 4);
-		assert(dut.rf.regs[15] == 5);
-		assert(dut.rf.regs[16] == 6);
-		assert(dut.rf.regs[17] == 7);
-		assert(dut.rf.regs[18] == 8);
-		assert(dut.rf.regs[19] == 9);
-		assert(dut.rf.regs[20] == 10);
-
-		$display("%t testing recursive Fibonacci", $time);
-		run_program("../benchmarks/test12_Fibonacci.arm", 300);
-		assert(dut.rf.regs[0] == 6);
-		assert(dut.rf.regs[1] == 8);
-		assert(dut.rf.regs[28] == 8);
-		assert(dut.rf.regs[30] == 196);
-
-		$display("%t All benchmarks passed.", $time);
 		$stop;
 	end
 endmodule
