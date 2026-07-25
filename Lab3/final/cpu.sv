@@ -12,7 +12,7 @@ module cpu (
   logic [63:0] PC, PCNext, PCPlus4, BranchTarget, PCBranchStage;
   reg64bit pcreg (.q(PC), .d(PCNext), .en(1'b1), .clk(clk), .reset(reset));
 
-  assign pc_out    = PC;
+  assign pc_out = PC;
   assign instr_out = instr;
 
   // Instruction fetch
