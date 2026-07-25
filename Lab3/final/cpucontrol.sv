@@ -107,7 +107,7 @@ module control_unit (
   assign IsBL = isBL;
 
   // ALUCntrl: bit2 is always 0 for this instruction set (000=passB, 010=add, 011=sub)
-  assign ALUCntrl[2], 1'b0;
+  assign ALUCntrl[2] = 1'b0;
   or  g_alu1 (ALUCntrl[1], isADDI, isADDS, isSUBS, isLDUR, isSTUR);
   assign ALUCntrl[0] = isSUBS;
 

@@ -16,7 +16,7 @@
 // finish. Bump this up if a program needs more instructions.
 // =====================================================================
 
-module cpu_testbench ();
+module cpu_tb ();
 
   parameter ClockDelay = 10000;
   parameter NumCycles  = 800; // Covers every provided benchmark with margin --
