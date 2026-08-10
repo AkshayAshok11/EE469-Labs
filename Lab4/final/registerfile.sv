@@ -5,9 +5,9 @@ module dec1_2 (out0, out1, in, en);
   input  logic in, en;
   logic n_in;
 
-  not #50 g1 (n_in, in);
-  and #50 g2 (out0, en, n_in);
-  and #50 g3 (out1, en, in);
+  not #(0.05) g1 (n_in, in);
+  and #(0.05) g2 (out0, en, n_in);
+  and #(0.05) g3 (out1, en, in);
 endmodule
 
 
